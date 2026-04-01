@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF合并工具</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2E8B57;
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #2E8B57;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #257347;
+        }
+
+        .btn-secondary {
+            background: #f1f3f5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-danger {
+            background: #ff4d4f;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #ff7875;
+        }
+
+        .stats {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .file-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            gap: 15px;
+        }
+
+        .file-item:last-child {
+            border-bottom: none;
+        }
+
+        .file-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .file-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .file-name {
+            font-size: 14px;
+            color: #333;
+            word-break: break-all;
+            margin-bottom: 4px;
+        }
+
+        .file-meta {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .file-range {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .file-range input {
+            width: 120px;
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .file-range input:focus {
+            outline: none;
+            border-color: #2E8B57;
+        }
+
+        .file-ops {
+            display: flex;
+            gap: 8px;
+        }
+
+        .file-ops button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            background: #f1f3f5;
+            color: #666;
+        }
+
+        .file-ops button:hover {
+            background: #e5e7eb;
+        }
+
+        .empty-tip {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-tip .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .settings {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
+        }
+
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .setting-item label {
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .setting-item input[type="text"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+        }
+
+        .setting-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .progress-container {
+            margin-top: 15px;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #2E8B57;
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .log-box {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 15px;
+            max-height: 150px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .log-box .success {
+            color: #2E8B57;
+        }
+
+        .log-box .error {
+            color: #ff4d4f;
+        }
+
+        .bottom-actions {
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .btn-merge {
+            padding: 15px 60px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .btn-merge:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .file-item {
+                flex-wrap: wrap;
+            }
+
+            .file-ops {
+                width: 100%;
+                justify-content: flex-end;
+                margin-top: 10px;
+            }
+
+            .toolbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-group {
+                justify-content: center;
+            }
+
+            .stats {
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PDF合并工具</h1>
+            <p>简单易用的在线PDF合并工具，保护隐私，无需上传</p>
+        </div>
+
+        <div class="card">
+            <div class="toolbar">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="addFiles()">+ 添加PDF文件</button>
+                    <button class="btn btn-secondary" onclick="selectAll()">全选</button>
+                    <button class="btn btn-secondary" onclick="selectNone()">取消全选</button>
+                    <button class="btn btn-secondary" onclick="clearSelected()">清除选中</button>
+                </div>
+                <div class="stats">
+                    已选择 <span id="selectedCount">0</span> 个文件，共 <span id="totalPages">0</span> 页
+                </div>
+            </div>
+
+            <input type="file" id="fileInput" accept=".pdf" multiple onchange="handleFiles(this.files)">
+
+            <div class="file-list" id="fileList">
+                <div class="empty-tip">
+                    <div class="icon">📄</div>
+                    <p>点击"添加PDF文件"按钮，或将PDF文件拖拽到此处</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 15px; font-size: 16px; color: #333;">输出设置</h3>
+            <div class="settings">
+                <div class="setting-item">
+                    <label>输出文件名：</label>
+                    <input type="text" id="outputName" value="merged" placeholder="输出文件名">
+                    <span style="color: #999;">.pdf</span>
+                </div>
+                <div class="setting-item">
+                    <input type="checkbox" id="addBlankPage" checked>
+                    <label for="addBlankPage">自动添加空白页（保持偶数页）</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 style="margin-bottom: 15px; font-size: 16px; color: #333;">处理进度</h3>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="progressText">就绪</span>
+                    <span id="pageCount">共 0 页</span>
+                </div>
+            </div>
+            <div class="log-box" id="logBox" style="margin-top: 15px;">
+                <div>欢迎使用PDF合并工具，请添加PDF文件开始操作。</div>
+            </div>
+        </div>
+
+        <div class="bottom-actions">
+            <button class="btn btn-primary btn-merge" id="mergeBtn" onclick="startMerge()" disabled>开始合并</button>
+        </div>
+    </div>
+
+    <script>
+        const { PDFDocument } = PDFLib;
+
+        let files = [];
+        let fileIndex = 0;
+
+        async function addFiles() {
+            document.getElementById('fileInput').click();
+        }
+
+        async function handleFiles(fileList) {
+            if (!fileList || fileList.length === 0) return;
+            for (let i = 0; i < fileList.length; i++) {
+                const file = fileList[i];
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    await addPDFToList(file);
+                }
+            }
+            document.getElementById('fileInput').value = '';
+        }
+
+        async function addPDFToList(file) {
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdfDoc = await PDFDocument.load(arrayBuffer);
+                const pageCount = pdfDoc.getPageCount();
+
+                files.push({
+                    id: fileIndex++,
+                    name: file.name,
+                    size: file.size,
+                    pageCount: pageCount,
+                    range: `1-${pageCount}`,
+                    selected: true,
+                    data: arrayBuffer
+                });
+
+                updateFileList();
+                updateStats();
+                log(`已添加: ${file.name} (${pageCount}页)`, 'success');
+            } catch (error) {
+                log(`读取PDF失败: ${file.name} - ${error.message}`, 'error');
+            }
+        }
+
+        function updateFileList() {
+            const container = document.getElementById('fileList');
+
+            if (files.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-tip">
+                        <div class="icon">📄</div>
+                        <p>点击"添加PDF文件"按钮，或将PDF文件拖拽到此处</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = files.map((f, index) => `
+                <div class="file-item" data-id="${f.id}">
+                    <input type="checkbox" class="file-checkbox" ${f.selected ? 'checked' : ''} onchange="toggleSelect(${f.id})">
+                    <div class="file-info">
+                        <div class="file-name">${escapeHtml(f.name)}</div>
+                        <div class="file-meta">${formatSize(f.size)} · ${f.pageCount}页</div>
+                    </div>
+                    <div class="file-range">
+                        <input type="text" value="${f.range}" onchange="updateRange(${f.id}, this.value)" placeholder="如: 1-3,5,7-10">
+                    </div>
+                    <div class="file-ops">
+                        <button onclick="moveUp(${index})" ${index === 0 ? 'disabled' : ''}>↑</button>
+                        <button onclick="moveDown(${index})" ${index === files.length - 1 ? 'disabled' : ''}>↓</button>
+                        <button onclick="removeFile(${f.id})">删除</button>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('mergeBtn').disabled = files.filter(f => f.selected).length < 2;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        function toggleSelect(id) {
+            const file = files.find(f => f.id === id);
+            if (file) {
+                file.selected = !file.selected;
+                updateFileList();
+                updateStats();
+            }
+        }
+
+        function selectAll() {
+            files.forEach(f => f.selected = true);
+            updateFileList();
+            updateStats();
+        }
+
+        function selectNone() {
+            files.forEach(f => f.selected = false);
+            updateFileList();
+            updateStats();
+        }
+
+        function clearSelected() {
+            const selected = files.filter(f => f.selected);
+            if (selected.length === 0) {
+                log('没有选中的文件', 'error');
+                return;
+            }
+            files = files.filter(f => !f.selected);
+            updateFileList();
+            updateStats();
+            log(`已清除 ${selected.length} 个文件`, 'success');
+        }
+
+        function moveUp(index) {
+            if (index > 0) {
+                [files[index - 1], files[index]] = [files[index], files[index - 1]];
+                updateFileList();
+            }
+        }
+
+        function moveDown(index) {
+            if (index < files.length - 1) {
+                [files[index], files[index + 1]] = [files[index + 1], files[index]];
+                updateFileList();
+            }
+        }
+
+        function removeFile(id) {
+            const file = files.find(f => f.id === id);
+            if (file) {
+                files = files.filter(f => f.id !== id);
+                updateFileList();
+                updateStats();
+                log(`已删除: ${file.name}`, 'success');
+            }
+        }
+
+        function updateRange(id, value) {
+            const file = files.find(f => f.id === id);
+            if (file) {
+                file.range = value;
+                log(`已更新 ${file.name} 的页码范围为: ${value}`, 'success');
+            }
+        }
+
+        function updateStats() {
+            const selected = files.filter(f => f.selected);
+            const totalPages = selected.reduce((sum, f) => sum + f.pageCount, 0);
+            document.getElementById('selectedCount').textContent = selected.length;
+            document.getElementById('totalPages').textContent = totalPages;
+        }
+
+        function log(message, type = 'info') {
+            const box = document.getElementById('logBox');
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'success' ? 'success' : (type === 'error' ? 'error' : '');
+            box.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function updateProgress(current, total, text) {
+            const percent = total > 0 ? (current / total) * 100 : 0;
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('progressText').textContent = text;
+            document.getElementById('pageCount').textContent = `共 ${current}/${total} 页`;
+        }
+
+        function parseRange(rangeStr, maxPages) {
+            if (!rangeStr || rangeStr.trim() === '') {
+                return [];
+            }
+
+            const result = [];
+            const parts = rangeStr.split(',');
+
+            for (const part of parts) {
+                const trimmed = part.trim();
+                if (trimmed.includes('-')) {
+                    const [start, end] = trimmed.split('-').map(s => parseInt(s.trim()));
+                    if (isNaN(start) || isNaN(end) || start < 1 || end > maxPages || start > end) {
+                        continue;
+                    }
+                    for (let i = start; i <= end; i++) {
+                        if (!result.includes(i)) {
+                            result.push(i);
+                        }
+                    }
+                } else {
+                    const page = parseInt(trimmed);
+                    if (!isNaN(page) && page >= 1 && page <= maxPages && !result.includes(page)) {
+                        result.push(page);
+                    }
+                }
+            }
+
+            return result.sort((a, b) => a - b);
+        }
+
+        async function createBlankPdf() {
+            const blankDoc = await PDFDocument.create();
+            const page = blankDoc.addPage([595.276, 841.89]);
+            const helveticaFont = await blankDoc.embedFont(PDFDocument.Helvetica);
+            page.drawText('', {
+                font: helveticaFont,
+                size: 12,
+                x: 0,
+                y: 0
+            });
+            return blankDoc;
+        }
+
+        async function startMerge() {
+            const selectedFiles = files.filter(f => f.selected);
+            if (selectedFiles.length < 2) {
+                log('请至少选择2个文件进行合并', 'error');
+                return;
+            }
+
+            const mergeBtn = document.getElementById('mergeBtn');
+            mergeBtn.disabled = true;
+            mergeBtn.textContent = '处理中...';
+
+            try {
+                log('开始合并PDF...', 'info');
+                updateProgress(0, 100, '正在初始化...');
+
+                const outputDoc = await PDFDocument.create();
+                const addBlankPage = document.getElementById('addBlankPage').checked;
+                let totalAddedPages = 0;
+
+                log(`添加空白页选项: ${addBlankPage ? '开启' : '关闭'}`, 'info');
+
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    const progress = Math.round((i / selectedFiles.length) * 100);
+                    updateProgress(progress, 100, `正在处理: ${file.name}`);
+
+                    const srcDoc = await PDFDocument.load(file.data);
+                    const pagesToAdd = parseRange(file.range, file.pageCount);
+
+                    log(`解析 ${file.name} 页码范围: ${file.range} -> ${pagesToAdd.length}页`, 'info');
+
+                    for (const pageNum of pagesToAdd) {
+                        const [copiedPage] = await outputDoc.copyPages(srcDoc, [pageNum - 1]);
+                        outputDoc.addPage(copiedPage);
+                        totalAddedPages++;
+                    }
+
+                    log(`已处理: ${file.name} (${pagesToAdd.length}页)`, 'success');
+                }
+
+                log(`合并完成，总页数: ${totalAddedPages}`, 'info');
+
+                if (addBlankPage) {
+                    if (totalAddedPages % 2 !== 0) {
+                        log('总页数为奇数，需要添加空白页', 'info');
+                        const blankSrc = await createBlankPdf();
+                        const [blankPage] = await outputDoc.copyPages(blankSrc, [0]);
+                        outputDoc.addPage(blankPage);
+                        totalAddedPages++;
+                        log('已添加空白页保持偶数页数', 'success');
+                    } else {
+                        log('总页数已是偶数，无需添加空白页', 'info');
+                    }
+                }
+
+                updateProgress(90, 100, '正在生成PDF...');
+
+                const pdfBytes = await outputDoc.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                updateProgress(100, 100, '合并完成！');
+                log(`合并完成！共 ${totalAddedPages} 页`, 'success');
+
+                const link = document.createElement('a');
+                link.href = url;
+                const outputName = document.getElementById('outputName').value.trim() || 'merged';
+                link.download = outputName + '.pdf';
+                link.click();
+
+                URL.revokeObjectURL(url);
+                log('文件已开始下载', 'success');
+
+            } catch (error) {
+                log(`合并失败: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                mergeBtn.disabled = false;
+                mergeBtn.textContent = '开始合并';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const dropZone = document.getElementById('fileList');
+
+            dropZone.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.style.background = '#f0f0f0';
+            });
+
+            dropZone.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.style.background = '';
+            });
+
+            dropZone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.style.background = '';
+
+                const droppedFiles = e.dataTransfer.files;
+                if (droppedFiles.length > 0) {
+                    handleFiles(droppedFiles);
+                }
+            });
+        });
+
+        log('PDF合并工具已就绪，请添加PDF文件', 'info');
+    </script>
+</body>
+</html>

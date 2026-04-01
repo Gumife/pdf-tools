@@ -1,0 +1,46 @@
+<view class="container">
+  <view class="header">
+    <view class="icon">📑</view>
+    <text class="title">PDF合并工具</text>
+    <text class="subtitle">简单易用的PDF处理工具</text>
+  </view>
+
+  <view class="card">
+    <view class="feature-list">
+      <view class="feature-item">
+        <text class="feature-icon">✓</text>
+        <text class="feature-text">合并多个PDF文件</text>
+      </view>
+      <view class="feature-item">
+        <text class="feature-icon">✓</text>
+        <text class="feature-text">自定义选择页面范围</text>
+      </view>
+      <view class="feature-item">
+        <text class="feature-icon">✓</text>
+        <text class="feature-text">调整文件合并顺序</text>
+      </view>
+      <view class="feature-item">
+        <text class="feature-icon">✓</text>
+        <text class="feature-text">自动添加空白页保持偶数</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="warning-box">
+      <text class="warning-icon">ℹ️</text>
+      <text class="warning-text">由于微信小程序限制，PDF合并功能需要通过H5页面实现。请点击下方按钮在浏览器中打开使用。</text>
+    </view>
+  </view>
+
+  <view class="btn-container">
+    <button class="btn-primary" bindtap="openInBrowser">在浏览器中打开</button>
+  </view>
+
+  <view class="tips">
+    <text class="tips-title">使用提示</text>
+    <text class="tips-text">1. 点击上方按钮复制链接</text>
+    <text class="tips-text">2. 粘贴到手机浏览器打开</text>
+    <text class="tips-text">3. 即可使用完整的PDF合并功能</text>
+  </view>
+</view>
